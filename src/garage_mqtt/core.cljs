@@ -32,7 +32,8 @@
 (defn dispatch-command [cmd]
   (case [(current-state) cmd]
     [::closed "OPEN"]  (toggle-opener!)
-    [::open   "CLOSE"] (toggle-opener!)))
+    [::open   "CLOSE"] (toggle-opener!)
+    :no-match))
 
 (defn on-connect []
   (log "Connected to MQTT!")
