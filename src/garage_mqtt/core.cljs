@@ -30,7 +30,7 @@
 (def garage-toggle (onoff/Gpio. garage-toggle-pin "out"))
 
 (def client (mqtt/connect mqtt-uri (clj->js options)))
-(log "Connecting to " mqtt-uri)
+(log "Connecting to " (->> mqtt-uri js/URL. .-hostname))
 
 (defn toggle-opener! []
   (log "Toggling garage opener..")
