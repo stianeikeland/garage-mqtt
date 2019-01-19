@@ -10,6 +10,9 @@
 
 ;; GPIO pins for the C.H.I.P:
 ;; http://www.chip-community.org/index.php/GPIO_Info
+;; GPIO pins for RPI:
+;; https://www.raspberrypi.org/documentation/usage/gpio/
+
 (def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "408"))
 (def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "410"))
 (def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "412")
