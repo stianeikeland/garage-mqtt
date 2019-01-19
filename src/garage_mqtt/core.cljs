@@ -26,6 +26,8 @@
                      :qos 0
                      :retain true}})
 
+(def door-state (atom ::unknown))
+
 (def door-sensor (onoff/Gpio. door-sensor-pin "in" "both" (clj->js {:debounceTimeout 50})))
 (def garage-toggle (onoff/Gpio. garage-toggle-pin "out"))
 
@@ -37,20 +39,23 @@
   (.write garage-toggle 1 (fn [] ))
   (js/setTimeout #(.write garage-toggle 0 (fn [] )) 100))
 
-(defn read-door-state []
-  (let [door-pin (= (.readSync door-sensor) 1)
+(defn gpio-val->door-state [val]
+  (let [door-pin (= val 1)
         door-closed (if invert-door-sensor (not door-pin) door-pin)]
     (if door-closed
       ::closed
       ::open)))
 
+(defn read-door-state []
+  (gpio-val->door-state (.readSync door-sensor)))
+
 (defn publish-state []
-  (let [state (name (read-door-state))
-        opts  (clj->js {:retain true})]
-    (.publish client topic-state state opts)))
+  (let [mystate (name @door-state)
+        opts    (clj->js {:retain true})]
+      (.publish client topic-state mystate opts)))
 
 (defn dispatch-command [cmd]
-  (case [(read-door-state) cmd]
+  (case [@door-state cmd]
     [::closed "OPEN"]  (toggle-opener!)
     [::open   "CLOSE"] (toggle-opener!)
     :no-match))
@@ -59,6 +64,7 @@
   (log "Connected to MQTT!")
   (.subscribe client topic-set)
   (.publish client topic-availability "online")
+  (swap! door-state read-door-state)
   (publish-state))
 
 (defn on-message [topic message]
@@ -67,9 +73,12 @@
     (when (= topic topic-set)
       (dispatch-command msg-str))))
 
+(defn on-door-pin-change [err val]
+  (let [state (gpio-val->door-state val)]
+    (log "Door state changed: " state)
+    (reset! door-state state)
+    (publish-state)))
+
 (.on client "connect" on-connect)
 (.on client "message" on-message)
-
-(.watch door-sensor (fn [err val]
-                      (log "Door GPIO: " val)
-                      (publish-state)))
+(.watch door-sensor on-door-pin-change)
