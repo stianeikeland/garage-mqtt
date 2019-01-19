@@ -13,6 +13,7 @@
 (def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "408"))
 (def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "410"))
 (def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "412")
+(def invert-door-sensor (cljs.reader/read-string (env-or-default "INVERT_DOOR_SENSOR" "false")))
 
 
 (def options {:keepalive (* 60 5)
@@ -32,18 +33,20 @@
   (.write garage-toggle 1 (fn [] ))
   (js/setTimeout #(.write garage-toggle 0 (fn [] )) 100))
 
-(defn current-state []
-  (if (= (.readSync door-sensor) 1)
-    ::closed
-    ::open))
+(defn read-door-state []
+  (let [door-pin (= (.readSync door-sensor) 1)
+        door-closed (if invert-door-sensor (not door-pin) door-pin)]
+    (if door-closed
+      ::closed
+      ::open)))
 
 (defn publish-state []
-  (let [state (name (current-state))
+  (let [state (name (read-door-state))
         opts  (clj->js {:retain true})]
     (.publish client topic-state state opts)))
 
 (defn dispatch-command [cmd]
-  (case [(current-state) cmd]
+  (case [(read-door-state) cmd]
     [::closed "OPEN"]  (toggle-opener!)
     [::open   "CLOSE"] (toggle-opener!)
     :no-match))
