@@ -1,10 +1,14 @@
 (ns garage-mqtt.core
   (:require [mqtt]))
 
-(def mqtt-uri           "mqtt://test.mosquitto.org")
-(def topic-availability "garage/door/availability")
-(def topic-set          "garage/door/set")
-(def topic-state        "garage/door/state")
+(defn get-env [var default]
+  (or (aget js/process.env var)
+      default))
+
+(def mqtt-uri           (get-env "MQTT_URI" "mqtt://test.mosquitto.org"))
+(def topic-availability (get-env "TOPIC_AVAIL" "garage/door/availability"))
+(def topic-set          (get-env "TOPIC_SET" "garage/door/set"))
+(def topic-state        (get-env "TOPIC_STATE" "garage/door/state"))
 
 (def options {:keepalive (* 60 5)
               :will {:topic topic-availability
@@ -17,6 +21,7 @@
     (println (str "[" ts "] " what))))
 
 (def client (mqtt/connect mqtt-uri (clj->js options)))
+(log (str "Connecting to " mqtt-uri))
 
 (defn toggle-opener! []
   (log "Toggling garage opener.."))
@@ -49,5 +54,3 @@
 
 (.on client "connect" on-connect)
 (.on client "message" on-message)
-
-(log "Connecting to MQTT..")
