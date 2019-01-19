@@ -1,9 +1,8 @@
 (ns garage-mqtt.core
+  (:require [garage-mqtt.helpers :refer [log env-or-default]]
+            [mqtt]
             [onoff :refer [Gpio]]))
 
-(defn get-env [var default]
-  (or (aget js/process.env var)
-      default))
 (def mqtt-uri           (env-or-default "MQTT_URI" "mqtt://test.mosquitto.org"))
 (def topic-availability (env-or-default "TOPIC_AVAIL" "garage/door/availability"))
 (def topic-set          (env-or-default "TOPIC_SET" "garage/door/set"))
@@ -22,14 +21,11 @@
                      :qos 0
                      :retain true}})
 
-(defn log [what]
-  (let [ts (.toISOString (new js/Date (js/Date.now)))]
-    (println (str "[" ts "] " what))))
 (def door-sensor (onoff/Gpio. door-sensor-pin "in" "both" (clj->js {:debounceTimeout 50})))
 (def garage-toggle (onoff/Gpio. garage-toggle-pin "out"))
 
 (def client (mqtt/connect mqtt-uri (clj->js options)))
-(log (str "Connecting to " mqtt-uri))
+(log "Connecting to " mqtt-uri)
 
 (defn toggle-opener! []
   (log "Toggling garage opener..")
@@ -60,7 +56,7 @@
 
 (defn on-message [topic message]
   (let [msg-str (.toString message)]
-    (log (str "Got command: " msg-str))
+    (log "Got command: " msg-str)
     (when (= topic topic-set)
       (dispatch-command msg-str))))
 
