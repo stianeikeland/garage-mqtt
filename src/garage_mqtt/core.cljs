@@ -1,5 +1,6 @@
 (ns garage-mqtt.core
   (:require [garage-mqtt.helpers :refer [log env-or-default]]
+            [cljs.reader :refer [read-string]]
             [mqtt]
             [onoff :refer [Gpio]]))
 
@@ -16,7 +17,7 @@
 (def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "408"))
 (def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "410"))
 (def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "412")
-(def invert-door-sensor (cljs.reader/read-string (env-or-default "INVERT_DOOR_SENSOR" "false")))
+(def invert-door-sensor (read-string (env-or-default "INVERT_DOOR_SENSOR" "false")))
 
 
 (def options {:keepalive (* 60 5)
