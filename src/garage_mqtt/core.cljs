@@ -8,6 +8,7 @@
 (def topic-availability (env-or-default "TOPIC_AVAIL" "garage/door/availability"))
 (def topic-set          (env-or-default "TOPIC_SET" "garage/door/set"))
 (def topic-state        (env-or-default "TOPIC_STATE" "garage/door/state"))
+(def client-id          (env-or-default "CLIENT_ID" "garage-node"))
 
 ;; GPIO pins for the C.H.I.P:
 ;; http://www.chip-community.org/index.php/GPIO_Info
@@ -21,6 +22,7 @@
 
 
 (def options {:keepalive (* 60 5)
+              :clientId client-id
               :will {:topic topic-availability
                      :payload "offline"
                      :qos 0
