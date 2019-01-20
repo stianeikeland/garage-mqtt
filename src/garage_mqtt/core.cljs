@@ -14,9 +14,9 @@
 ;; GPIO pins for RPI:
 ;; https://www.raspberrypi.org/documentation/usage/gpio/
 
-(def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "408"))
-(def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "410"))
-(def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "412")
+(def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "1016"))
+(def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "1017"))
+(def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "1018")
 (def invert-door-sensor (read-string (env-or-default "INVERT_DOOR_SENSOR" "false")))
 
 
