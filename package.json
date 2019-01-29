@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@cljs-oss/module-deps": "^1.1.1",
+    "mqtt": "^2.18.8",
+    "onoff": "^3.2.2"
+  },
+  "devDependencies": {
+    "lumo-cljs": "^1.9.0"
+  },
+  "scripts": {
+    "build": "node_modules/lumo-cljs/download/dist/lumo build.cljs"
+  }
+}
