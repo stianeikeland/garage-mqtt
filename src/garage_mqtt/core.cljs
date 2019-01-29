@@ -65,7 +65,7 @@
 (defn on-connect []
   (log "Connected to MQTT!")
   (.subscribe client topic-set)
-  (.publish client topic-availability "online")
+  (.publish client topic-availability "online" (clj->js {:retain true}))
   (swap! door-state read-door-state)
   (publish-state))
 
