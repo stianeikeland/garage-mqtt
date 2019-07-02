@@ -5,7 +5,7 @@
    :output-to "main.js"
    :optimizations :none
    :install-deps true
-   :npm-deps {:mqtt "2.18.8"
+   :npm-deps {:mqtt "3.0.0"
               :onoff "3.2.2"}
    :target :nodejs})
 

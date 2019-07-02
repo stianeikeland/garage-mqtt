@@ -15,11 +15,12 @@
 ;; GPIO pins for RPI:
 ;; https://www.raspberrypi.org/documentation/usage/gpio/
 
-(def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "1016"))
-(def garage-toggle-pin  (env-or-default "GARAGE_TOGGLE_PIN" "1017"))
-(def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "1018")
+(def door-sensor-pin    (env-or-default "DOOR_SENSOR_PIN" "136")) ;; CSID4
 (def invert-door-sensor (read-string (env-or-default "INVERT_DOOR_SENSOR" "false")))
 
+(def garage-toggle-pin-high  (env-or-default "GARAGE_TOGGLE_PIN_HIGH" "139")) ;; CSID7
+(def garage-toggle-pin-low  (env-or-default "GARAGE_TOGGLE_PIN_LOW" "137")) ;; CSID5
+(def activity-led-pin)  (env-or-default "ACTIVITY_LED_PIN" "134") ;; CSID2
 
 (def options {:keepalive (* 60 5)
               :clientId client-id
@@ -30,23 +31,32 @@
 
 (def door-state (atom ::unknown))
 
-(def door-sensor (onoff/Gpio. door-sensor-pin "in" "both" (clj->js {:debounceTimeout 50})))
-(def garage-toggle (onoff/Gpio. garage-toggle-pin "out"))
+(def door-sensor (onoff/Gpio. door-sensor-pin "in"))
+  
+(def garage-toggle-high (onoff/Gpio. garage-toggle-pin-high "out"))
+(def garage-toggle-low (onoff/Gpio. garage-toggle-pin-low "out"))
 
 (def client (mqtt/connect mqtt-uri (clj->js options)))
 (log "Connecting to " (->> mqtt-uri js/URL. .-hostname))
 
+(defn noop [*args])
+
 (defn toggle-opener! []
   (log "Toggling garage opener..")
-  (.write garage-toggle 1 (fn [] ))
-  (js/setTimeout #(.write garage-toggle 0 (fn [] )) 100))
+  (.write garage-toggle-high 1 noop)
+  (.write garage-toggle-low 0 noop)
+  (js/setTimeout
+   #(do
+      (.write garage-toggle-high 0 noop)
+      (.write garage-toggle-low 1 noop))
+   200))
 
 (defn gpio-val->door-state [val]
   (let [door-pin (= val 1)
-        door-closed (if invert-door-sensor (not door-pin) door-pin)]
-    (if door-closed
-      ::closed
-      ::open)))
+        door-open (if invert-door-sensor (not door-pin) door-pin)]
+    (if door-open
+      ::open
+      ::closed)))
 
 (defn read-door-state []
   (gpio-val->door-state (.readSync door-sensor)))
@@ -54,7 +64,9 @@
 (defn publish-state []
   (let [mystate (name @door-state)
         opts    (clj->js {:retain true})]
-      (.publish client topic-state mystate opts)))
+    (log "Publishing state..")
+    (log mystate)
+    (.publish client topic-state mystate opts)))
 
 (defn dispatch-command [cmd]
   (case [@door-state cmd]
@@ -81,6 +93,19 @@
     (reset! door-state state)
     (publish-state)))
 
+(defn poll-door-state-and-notify-if-changed []
+  (let [new-state (read-door-state)]
+    (when-not (= new-state @door-state)
+      (log "Door state changed: " new-state)
+      (reset! door-state new-state)
+      (publish-state))))
+
 (.on client "connect" on-connect)
 (.on client "message" on-message)
-(.watch door-sensor on-door-pin-change)
+(.on client "reconnect" #(log "Reconnect.."))
+(.on client "offline" #(log "Offline.."))
+(.on client "error" #(log %1))
+
+;; Poll based.. the pin didn't support interrupts :(
+(js/setInterval poll-door-state-and-notify-if-changed 1000)
+
