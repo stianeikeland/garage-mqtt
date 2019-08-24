@@ -49,7 +49,7 @@
    #(do
       (.write garage-toggle-high 0 noop)
       (.write garage-toggle-low 1 noop))
-   200))
+   500))
 
 (defn gpio-val->door-state [val]
   (let [door-pin (= val 1)
